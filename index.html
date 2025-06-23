@@ -36,6 +36,40 @@
                     <p class="no-tasks">No tasks yet. Add one above!</p>
                 </div>
             </section>
+
+            <section class="stats-section">
+                <div class="stats-header">
+                    <h2>Statistics</h2>
+                    <div class="time-filter">
+                        <button class="filter-btn active" data-period="today">Today</button>
+                        <button class="filter-btn" data-period="week">This Week</button>
+                        <button class="filter-btn" data-period="month">This Month</button>
+                    </div>
+                </div>
+
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-value" id="totalTime">0h 0m</div>
+                        <div class="stat-label">Total Time</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="sessionCount">0</div>
+                        <div class="stat-label">Sessions</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="avgSession">0m</div>
+                        <div class="stat-label">Avg Session</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="activeTasksCount">0</div>
+                        <div class="stat-label">Active Tasks</div>
+                    </div>
+                </div>
+
+                <div class="chart-container">
+                    <canvas id="timeChart" width="400" height="200"></canvas>
+                </div>
+            </section>
         </main>
     </div>
 
