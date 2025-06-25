@@ -6,10 +6,13 @@ class TaskTimer {
         this.elapsedTime = 0;
         this.timerInterval = null;
         this.isRunning = false;
+        this.currentPeriod = 'today';
 
         this.initElements();
         this.bindEvents();
         this.renderTasks();
+        this.updateStats();
+        this.initChart();
     }
 
     initElements() {
@@ -20,6 +23,12 @@ class TaskTimer {
         this.pauseBtn = document.getElementById('pauseBtn');
         this.stopBtn = document.getElementById('stopBtn');
         this.taskList = document.getElementById('taskList');
+        
+        this.totalTimeEl = document.getElementById('totalTime');
+        this.sessionCountEl = document.getElementById('sessionCount');
+        this.avgSessionEl = document.getElementById('avgSession');
+        this.activeTasksCountEl = document.getElementById('activeTasksCount');
+        this.chartCanvas = document.getElementById('timeChart');
     }
 
     bindEvents() {
@@ -31,6 +40,15 @@ class TaskTimer {
         this.startBtn.addEventListener('click', () => this.startTimer());
         this.pauseBtn.addEventListener('click', () => this.pauseTimer());
         this.stopBtn.addEventListener('click', () => this.stopTimer());
+
+        document.querySelectorAll('.filter-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+                e.target.classList.add('active');
+                this.currentPeriod = e.target.dataset.period;
+                this.updateStats();
+            });
+        });
     }
 
     addTask() {
@@ -101,6 +119,7 @@ class TaskTimer {
             });
             this.saveTasks();
             this.renderTasks();
+            this.updateStats();
         }
 
         this.currentTask = null;
@@ -162,10 +181,116 @@ class TaskTimer {
         this.tasks = this.tasks.filter(t => t.id != taskId);
         this.saveTasks();
         this.renderTasks();
+        this.updateStats();
     }
 
     saveTasks() {
         localStorage.setItem('tasks', JSON.stringify(this.tasks));
+    }
+
+    getFilteredSessions() {
+        const now = new Date();
+        const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        const startOfWeek = new Date(startOfToday);
+        startOfWeek.setDate(startOfToday.getDate() - startOfToday.getDay());
+        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+
+        let cutoff;
+        switch (this.currentPeriod) {
+            case 'today':
+                cutoff = startOfToday;
+                break;
+            case 'week':
+                cutoff = startOfWeek;
+                break;
+            case 'month':
+                cutoff = startOfMonth;
+                break;
+            default:
+                cutoff = new Date(0);
+        }
+
+        return this.tasks.flatMap(task => 
+            task.sessions.filter(session => 
+                new Date(session.timestamp) >= cutoff
+            ).map(session => ({ ...session, taskName: task.name }))
+        );
+    }
+
+    updateStats() {
+        const sessions = this.getFilteredSessions();
+        const totalTime = sessions.reduce((sum, session) => sum + session.duration, 0);
+        const sessionCount = sessions.length;
+        const avgSession = sessionCount > 0 ? totalTime / sessionCount : 0;
+        const activeTasks = new Set(sessions.map(s => s.taskName)).size;
+
+        this.totalTimeEl.textContent = this.formatTimeShort(totalTime);
+        this.sessionCountEl.textContent = sessionCount.toString();
+        this.avgSessionEl.textContent = this.formatTimeShort(avgSession);
+        this.activeTasksCountEl.textContent = activeTasks.toString();
+
+        this.drawChart(sessions);
+    }
+
+    formatTimeShort(ms) {
+        const minutes = Math.floor(ms / (1000 * 60));
+        const hours = Math.floor(minutes / 60);
+        const mins = minutes % 60;
+
+        if (hours > 0) {
+            return `${hours}h ${mins}m`;
+        }
+        return `${mins}m`;
+    }
+
+    initChart() {
+        const ctx = this.chartCanvas.getContext('2d');
+        this.chartCtx = ctx;
+    }
+
+    drawChart(sessions) {
+        const ctx = this.chartCtx;
+        const canvas = this.chartCanvas;
+        
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        if (sessions.length === 0) {
+            ctx.fillStyle = '#a0aec0';
+            ctx.font = '16px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText('No data for this period', canvas.width / 2, canvas.height / 2);
+            return;
+        }
+
+        const taskTimes = {};
+        sessions.forEach(session => {
+            taskTimes[session.taskName] = (taskTimes[session.taskName] || 0) + session.duration;
+        });
+
+        const tasks = Object.keys(taskTimes);
+        const times = Object.values(taskTimes);
+        const maxTime = Math.max(...times);
+
+        const colors = ['#667eea', '#764ba2', '#f093fb', '#f5576c', '#4facfe', '#00f2fe'];
+        const barWidth = canvas.width / tasks.length * 0.8;
+        const maxBarHeight = canvas.height * 0.7;
+
+        tasks.forEach((task, i) => {
+            const barHeight = (taskTimes[task] / maxTime) * maxBarHeight;
+            const x = (canvas.width / tasks.length) * i + (canvas.width / tasks.length - barWidth) / 2;
+            const y = canvas.height - barHeight - 30;
+
+            ctx.fillStyle = colors[i % colors.length];
+            ctx.fillRect(x, y, barWidth, barHeight);
+
+            ctx.fillStyle = '#333';
+            ctx.font = '12px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText(this.formatTimeShort(taskTimes[task]), x + barWidth / 2, y - 5);
+            
+            const truncatedName = task.length > 10 ? task.substring(0, 10) + '...' : task;
+            ctx.fillText(truncatedName, x + barWidth / 2, canvas.height - 10);
+        });
     }
 }
 
