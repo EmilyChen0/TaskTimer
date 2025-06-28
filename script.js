@@ -29,6 +29,7 @@ class TaskTimer {
         this.avgSessionEl = document.getElementById('avgSession');
         this.activeTasksCountEl = document.getElementById('activeTasksCount');
         this.chartCanvas = document.getElementById('timeChart');
+        this.exportBtn = document.getElementById('exportBtn');
     }
 
     bindEvents() {
@@ -49,6 +50,8 @@ class TaskTimer {
                 this.updateStats();
             });
         });
+
+        this.exportBtn.addEventListener('click', () => this.exportData());
     }
 
     addTask() {
@@ -291,6 +294,24 @@ class TaskTimer {
             const truncatedName = task.length > 10 ? task.substring(0, 10) + '...' : task;
             ctx.fillText(truncatedName, x + barWidth / 2, canvas.height - 10);
         });
+    }
+
+    exportData() {
+        const exportData = {
+            tasks: this.tasks,
+            exportDate: new Date().toISOString(),
+            version: '1.0'
+        };
+
+        const dataStr = JSON.stringify(exportData, null, 2);
+        const dataBlob = new Blob([dataStr], { type: 'application/json' });
+        
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(dataBlob);
+        link.download = `tasktimer-export-${new Date().toISOString().split('T')[0]}.json`;
+        link.click();
+        
+        URL.revokeObjectURL(link.href);
     }
 }
 
