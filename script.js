@@ -22,6 +22,7 @@ class TaskTimer {
         this.startBtn = document.getElementById('startBtn');
         this.pauseBtn = document.getElementById('pauseBtn');
         this.stopBtn = document.getElementById('stopBtn');
+        this.resetBtn = document.getElementById('resetBtn');
         this.taskList = document.getElementById('taskList');
         
         this.totalTimeEl = document.getElementById('totalTime');
@@ -41,6 +42,7 @@ class TaskTimer {
         this.startBtn.addEventListener('click', () => this.startTimer());
         this.pauseBtn.addEventListener('click', () => this.pauseTimer());
         this.stopBtn.addEventListener('click', () => this.stopTimer());
+        this.resetBtn.addEventListener('click', () => this.resetTimer());
 
         document.querySelectorAll('.filter-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
@@ -123,6 +125,20 @@ class TaskTimer {
             this.saveTasks();
             this.renderTasks();
             this.updateStats();
+        }
+
+        this.currentTask = null;
+        this.elapsedTime = 0;
+        this.isRunning = false;
+        this.updateDisplay();
+        this.updateButtons();
+        this.taskInput.value = '';
+    }
+
+    resetTimer() {
+        if (this.timerInterval) {
+            clearInterval(this.timerInterval);
+            this.timerInterval = null;
         }
 
         this.currentTask = null;

@@ -162,6 +162,15 @@ main {
     background: #e53e3e;
 }
 
+.btn-reset {
+    background: #a0aec0;
+    color: white;
+}
+
+.btn-reset:hover:not(:disabled) {
+    background: #718096;
+}
+
 .tasks-section h2 {
     margin-bottom: 20px;
     color: #2d3748;
